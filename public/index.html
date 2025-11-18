@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PgBoss Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jmespath@0.16.0/jmespath.min.js"></script>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1><a href="#overview" style="text-decoration: none; color: inherit;">⚡ PgBoss</a></h1>
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span>Connected</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h3>Queues</h3>
+                    <span class="queue-count">0</span>
+                </div>
+                <div class="queue-search">
+                    <input type="text" id="queueSearch" placeholder="Filter queues..." />
+                </div>
+                <div class="queue-list" id="queueList">
+                    <div class="loading"><span class="spinner"></span></div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="refresh-btn" id="refreshBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                    </svg>
+                    Refresh
+                </button>
+                <select id="intervalSelect" class="interval-select">
+                    <option value="minute">1 Minute</option>
+                    <option value="hour" selected>1 Hour</option>
+                    <option value="day">1 Day</option>
+                    <option value="week">1 Week</option>
+                    <option value="month">1 Month</option>
+                    <option value="year">1 Year</option>
+                </select>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="breadcrumb">
+                    <a href="#overview">Dashboard</a>
+                    <span class="separator">/</span>
+                    <span id="currentQueueBreadcrumb">Overview</span>
+                </div>
+                <div class="top-actions">
+                    <!-- Actions will be shown dynamically -->
+                </div>
+            </div>
+
+            <!-- Overview Section (no tabs) -->
+            <div id="overviewContent">
+                <!-- Overview Cards -->
+                <div class="overview-section" id="overviewSection">
+                    <div class="stat-card">
+                        <div class="stat-icon active">●</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalActive">0</div>
+                            <div class="stat-label">Active</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon completed">✓</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalCompleted">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon failed">✕</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalFailed">0</div>
+                            <div class="stat-label">Failed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon pending">○</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalPending">0</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Chart Section -->
+                <div class="chart-section">
+                    <div class="section-header">
+                        <h2>All Queues Timeline</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="globalChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Queue View with Tabs -->
+            <div class="queue-view" id="queueView" style="display: none;">
+                <!-- Tab Navigation -->
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab('stats')">📊 Stats</button>
+                    <button class="tab-btn" onclick="switchTab('jobs')">📋 Jobs</button>
+                </div>
+
+                <!-- Stats Tab -->
+                <div class="tab-content" id="statsTab">
+                    <!-- Queue Stats Cards -->
+                    <div class="overview-section" id="queueStatsSection">
+                        <div class="stat-card">
+                            <div class="stat-icon active">●</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="queueActive">0</div>
+                                <div class="stat-label">Active</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon completed">✓</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="queueCompleted">0</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon failed">✕</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="queueFailed">0</div>
+                                <div class="stat-label">Failed</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon pending">○</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="queuePending">0</div>
+                                <div class="stat-label">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Queue Chart -->
+                    <div class="chart-section">
+                        <div class="section-header">
+                            <h2>Job Timeline</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="queueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jobs Tab -->
+                <div class="tab-content" id="jobsTab" style="display: none;">
+                    <div class="jobs-section">
+                        <div class="section-header">
+                            <h2>Jobs</h2>
+                            <div class="job-actions">
+                                <button id="bulkSelectBtn" class="secondary-btn" title="Select Multiple">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 11 12 14 22 4"/>
+                                    </svg>
+                                    Select
+                                </button>
+                                <button id="bulkCancelBtn" class="danger-btn" style="display: none;">Cancel Selected</button>
+                                <button id="exportBtn" class="secondary-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                    Export
+                                </button>
+                            </div>
+                        </div>
+
+                <!-- Advanced Filters -->
+                <div class="filters-container">
+                    <div class="search-container">
+                        <input type="text" id="jobSearch" placeholder="Search jobs... (use 'jq:' prefix for JMESPath queries)" />
+                        <div id="searchHelp" class="search-help">
+                            <div class="help-item">Text search in ID, input, and output data</div>
+                            <div class="help-item">jq: prefix for JMESPath queries (e.g., jq:data.userId == "123" or jq:data.postId == "7452")</div>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>State</label>
+                            <select id="stateFilter">
+                                <option value="">All States</option>
+                                <option value="created">Created</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="failed">Failed</option>
+                                <option value="retry">Retry</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Date From</label>
+                            <input type="datetime-local" id="dateFrom" />
+                        </div>
+                        <div class="filter-group">
+                            <label>Date To</label>
+                            <input type="datetime-local" id="dateTo" />
+                        </div>
+                    </div>
+
+                    <div id="activeFilters" class="active-filters"></div>
+                </div>
+
+                <!-- Jobs Table -->
+                <div class="jobs-table-container">
+                    <table id="jobsTable">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-col">
+                                    <input type="checkbox" id="selectAllJobs" />
+                                </th>
+                                <th>ID</th>
+                                <th>State</th>
+                                <th>Priority</th>
+                                <th>Retry</th>
+                                <th>Created</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobsTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-message">Select a queue to view jobs</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                        <div id="paginationContainer" class="pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Job Details Modal -->
+    <div id="jobModal" class="modal" tabindex="-1">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Job Details</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="jobDetails"></div>
+                <div id="jobActions" class="job-actions-modal"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Modal -->
+    <div id="bulkModal" class="modal" tabindex="-1">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Bulk Actions</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Selected <span id="selectedCount">0</span> jobs</p>
+                <div class="bulk-actions">
+                    <button class="danger-btn" onclick="bulkCancel()">Cancel All</button>
+                    <button class="primary-btn" onclick="bulkRetry()">Retry All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
