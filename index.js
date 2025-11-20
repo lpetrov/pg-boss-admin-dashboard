@@ -258,16 +258,46 @@ async function testConnection() {
   }
 }
 
-// Job action endpoints (Note: These are placeholder endpoints - actual implementation depends on your pg-boss setup)
+// Job action endpoints
 app.post('/api/job/:id/retry', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
-    // In a real implementation, you would:
-    // 1. Get the job details
-    // 2. Create a new job with the same data
-    // 3. Update the original job's state if needed
-    res.json({ message: 'Job retry functionality not implemented - requires pg-boss instance access' });
+    // Check if job exists and can be retried
+    const jobCheck = await pool.query(
+      'SELECT id, state, retry_count, retry_limit FROM pgboss.job WHERE id = $1',
+      [id]
+    );
+
+    if (jobCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    const job = jobCheck.rows[0];
+
+    // Only retry failed or cancelled jobs
+    if (job.state !== 'failed' && job.state !== 'cancelled') {
+      return res.status(400).json({ error: `Cannot retry job in '${job.state}' state. Only failed or cancelled jobs can be retried.` });
+    }
+
+    // Update job to retry state
+    const result = await pool.query(
+      `UPDATE pgboss.job
+       SET state = 'retry',
+           retry_count = COALESCE(retry_count, 0) + 1,
+           started_on = NULL,
+           completed_on = NULL,
+           output = NULL
+       WHERE id = $1
+       RETURNING id, state, retry_count`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Job queued for retry',
+      job: result.rows[0]
+    });
   } catch (error) {
     console.error('Error retrying job:', error);
     res.status(500).json({ error: error.message });
@@ -278,10 +308,43 @@ app.post('/api/job/:id/cancel', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // In a real implementation, you would:
-    // 1. Update the job state to 'cancelled'
-    // 2. Prevent it from being picked up by workers
-    res.json({ message: 'Job cancel functionality not implemented - requires pg-boss instance access' });
+    // Check if job exists
+    const jobCheck = await pool.query(
+      'SELECT id, state FROM pgboss.job WHERE id = $1',
+      [id]
+    );
+
+    if (jobCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    const job = jobCheck.rows[0];
+
+    // Don't cancel already completed jobs
+    if (job.state === 'completed') {
+      return res.status(400).json({ error: 'Cannot cancel completed job' });
+    }
+
+    // Don't cancel already cancelled jobs
+    if (job.state === 'cancelled') {
+      return res.status(400).json({ error: 'Job is already cancelled' });
+    }
+
+    // Update job to cancelled state
+    const result = await pool.query(
+      `UPDATE pgboss.job
+       SET state = 'cancelled',
+           completed_on = NOW()
+       WHERE id = $1
+       RETURNING id, state`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Job cancelled successfully',
+      job: result.rows[0]
+    });
   } catch (error) {
     console.error('Error cancelling job:', error);
     res.status(500).json({ error: error.message });

@@ -923,31 +923,53 @@ function showJobActions(jobId) {
 
 async function retryJob(jobId) {
     if (!confirm('Are you sure you want to retry this job?')) return;
-    
+
     try {
-        const response = await fetch(`/api/job/${jobId}/retry`, { method: 'POST' });
+        const response = await fetch(`/api/job/${jobId}/retry`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
         if (response.ok) {
-            alert('Job retry functionality not implemented - requires pg-boss instance access');
+            alert(result.message || 'Job queued for retry successfully!');
             closeModal(document.getElementById('jobModal'));
             refresh();
+        } else {
+            alert(`Error: ${result.error || 'Failed to retry job'}`);
         }
     } catch (error) {
         console.error('Error retrying job:', error);
+        alert('Failed to retry job. See console for details.');
     }
 }
 
 async function cancelJob(jobId) {
     if (!confirm('Are you sure you want to cancel this job?')) return;
-    
+
     try {
-        const response = await fetch(`/api/job/${jobId}/cancel`, { method: 'POST' });
+        const response = await fetch(`/api/job/${jobId}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
         if (response.ok) {
-            alert('Job cancel functionality not implemented - requires pg-boss instance access');
+            alert(result.message || 'Job cancelled successfully!');
             closeModal(document.getElementById('jobModal'));
             refresh();
+        } else {
+            alert(`Error: ${result.error || 'Failed to cancel job'}`);
         }
     } catch (error) {
         console.error('Error cancelling job:', error);
+        alert('Failed to cancel job. See console for details.');
     }
 }
 

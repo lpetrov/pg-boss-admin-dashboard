@@ -1,6 +1,6 @@
 {
   "name": "pg-boss-admin-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Admin dashboard and debugging console for monitoring, managing and analyzing pg-boss job queues",
   "main": "index.js",
   "bin": {
