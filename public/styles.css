@@ -660,6 +660,23 @@ button {
     z-index: 1;
 }
 
+#jobsTable th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s, background 0.2s;
+}
+
+#jobsTable th.sortable:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.sort-indicator {
+    font-size: 10px;
+    color: var(--accent-info);
+    margin-left: 4px;
+}
+
 #jobsTable td {
     padding: 12px 16px;
     font-size: 14px;
@@ -907,6 +924,46 @@ pre {
     display: flex;
     gap: 8px;
     margin-top: var(--spacing-lg);
+}
+
+/* Clear Queue Modal */
+.clear-queue-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.radio-option:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-info);
+}
+
+.radio-option input[type="radio"] {
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.radio-option input[type="radio"]:checked + div strong {
+    color: var(--accent-info);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
 }
 
 /* Scrollbar */

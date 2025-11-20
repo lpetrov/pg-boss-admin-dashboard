@@ -184,6 +184,13 @@
                                     </svg>
                                     Export
                                 </button>
+                                <button id="clearQueueBtn" class="danger-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                    </svg>
+                                    Clear Queue
+                                </button>
                             </div>
                         </div>
 
@@ -231,11 +238,21 @@
                                 <th class="checkbox-col">
                                     <input type="checkbox" id="selectAllJobs" />
                                 </th>
-                                <th>ID</th>
-                                <th>State</th>
-                                <th>Priority</th>
-                                <th>Retry</th>
-                                <th>Created</th>
+                                <th class="sortable" onclick="sortJobs('id')">
+                                    ID <span class="sort-indicator" data-column="id"></span>
+                                </th>
+                                <th class="sortable" onclick="sortJobs('state')">
+                                    State <span class="sort-indicator" data-column="state"></span>
+                                </th>
+                                <th class="sortable" onclick="sortJobs('priority')">
+                                    Priority <span class="sort-indicator" data-column="priority"></span>
+                                </th>
+                                <th class="sortable" onclick="sortJobs('retrycount')">
+                                    Retry <span class="sort-indicator" data-column="retrycount"></span>
+                                </th>
+                                <th class="sortable" onclick="sortJobs('createdon')">
+                                    Created <span class="sort-indicator" data-column="createdon"></span>
+                                </th>
                                 <th>Duration</th>
                                 <th>Actions</th>
                             </tr>
@@ -283,6 +300,45 @@
                 <div class="bulk-actions">
                     <button class="danger-btn" onclick="bulkCancel()">Cancel All</button>
                     <button class="primary-btn" onclick="bulkRetry()">Retry All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Queue Modal -->
+    <div id="clearQueueModal" class="modal" tabindex="-1">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Clear Queue</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px;">
+                    <strong>Queue:</strong> <span id="clearQueueName"></span>
+                </p>
+                <p style="margin-bottom: 20px; color: var(--accent-danger);">
+                    ⚠️ This action cannot be undone!
+                </p>
+                <div class="clear-queue-options">
+                    <label class="radio-option">
+                        <input type="radio" name="clearType" value="pending" checked />
+                        <div>
+                            <strong>Clear Pending Only</strong>
+                            <div style="font-size: 12px; color: var(--text-muted);">Delete only 'created' and 'retry' jobs</div>
+                        </div>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="clearType" value="all" />
+                        <div>
+                            <strong>Clear All Jobs</strong>
+                            <div style="font-size: 12px; color: var(--text-muted);">Delete ALL jobs in this queue</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button class="secondary-btn" onclick="closeClearQueueModal()">Cancel</button>
+                    <button class="danger-btn" onclick="confirmClearQueue()">Clear Queue</button>
                 </div>
             </div>
         </div>

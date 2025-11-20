@@ -10,6 +10,8 @@ let activeFilters = {};
 let bulkSelectionMode = false;
 let currentPage = 1;
 let currentTab = 'stats';
+let sortColumn = 'createdon';
+let sortDirection = 'desc';
 const ITEMS_PER_PAGE = 50;
 
 // Initialize
@@ -97,7 +99,10 @@ function setupEventListeners() {
     
     // Export
     document.getElementById('exportBtn').addEventListener('click', exportJobs);
-    
+
+    // Clear queue
+    document.getElementById('clearQueueBtn').addEventListener('click', showClearQueueModal);
+
     // Modal handling
     document.querySelectorAll('.close-btn').forEach(btn => {
         btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal')));
@@ -501,6 +506,63 @@ function displayJobs(jobs) {
             </tr>
         `;
     }).join('');
+
+    // Update sort indicators
+    updateSortIndicators();
+}
+
+// Sorting
+function sortJobs(column) {
+    // Toggle direction if same column, otherwise default to desc
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'desc';
+    }
+
+    // Sort the allJobs array
+    allJobs.sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+
+        // Handle null/undefined values
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+
+        // Handle different data types
+        if (column === 'createdon' || column === 'startedon' || column === 'completedon') {
+            aVal = new Date(aVal).getTime();
+            bVal = new Date(bVal).getTime();
+        } else if (column === 'priority' || column === 'retrycount') {
+            aVal = parseInt(aVal) || 0;
+            bVal = parseInt(bVal) || 0;
+        } else if (typeof aVal === 'string') {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+        }
+
+        // Compare
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    // Re-display with current page
+    displayJobs(allJobs);
+}
+
+function updateSortIndicators() {
+    // Clear all indicators
+    document.querySelectorAll('.sort-indicator').forEach(indicator => {
+        indicator.textContent = '';
+    });
+
+    // Set active indicator
+    const activeIndicator = document.querySelector(`.sort-indicator[data-column="${sortColumn}"]`);
+    if (activeIndicator) {
+        activeIndicator.textContent = sortDirection === 'asc' ? ' ▲' : ' ▼';
+    }
 }
 
 // Bulk Selection
@@ -1385,13 +1447,68 @@ function formatDuration(ms) {
 }
 
 
+// Clear Queue
+function showClearQueueModal() {
+    if (!currentQueue) {
+        alert('No queue selected');
+        return;
+    }
+
+    document.getElementById('clearQueueName').textContent = currentQueue;
+    document.getElementById('clearQueueModal').style.display = 'block';
+}
+
+function closeClearQueueModal() {
+    document.getElementById('clearQueueModal').style.display = 'none';
+}
+
+async function confirmClearQueue() {
+    const clearType = document.querySelector('input[name="clearType"]:checked').value;
+    const queueName = currentQueue;
+
+    const confirmMessage = clearType === 'all'
+        ? `Are you sure you want to delete ALL jobs in queue "${queueName}"? This action cannot be undone!`
+        : `Are you sure you want to delete all PENDING jobs in queue "${queueName}"? This action cannot be undone!`;
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/queue/${encodeURIComponent(queueName)}/clear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ clearType })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`Successfully cleared ${result.deletedCount} jobs from queue "${queueName}"`);
+            closeClearQueueModal();
+            // Refresh data
+            loadQueues();
+            if (currentTab === 'jobs') {
+                loadJobs(queueName);
+            }
+        } else {
+            alert(`Error: ${result.error || 'Failed to clear queue'}`);
+        }
+    } catch (error) {
+        console.error('Error clearing queue:', error);
+        alert('Failed to clear queue. See console for details.');
+    }
+}
+
 function formatDateTimeLocal(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    
+
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 

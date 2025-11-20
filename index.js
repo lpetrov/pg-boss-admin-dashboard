@@ -251,7 +251,7 @@ app.post('/api/job/:id/retry', async (req, res) => {
 
 app.post('/api/job/:id/cancel', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     // In a real implementation, you would:
     // 1. Update the job state to 'cancelled'
@@ -259,6 +259,45 @@ app.post('/api/job/:id/cancel', async (req, res) => {
     res.json({ message: 'Job cancel functionality not implemented - requires pg-boss instance access' });
   } catch (error) {
     console.error('Error cancelling job:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Clear queue endpoint
+app.post('/api/queue/:queue/clear', async (req, res) => {
+  const { queue } = req.params;
+  const { clearType } = req.body;
+
+  try {
+    let query;
+    let result;
+
+    if (clearType === 'pending') {
+      // Delete only jobs in 'created' or 'retry' state
+      query = `
+        DELETE FROM pgboss.job
+        WHERE name = $1 AND state IN ('created', 'retry')
+      `;
+      result = await pool.query(query, [queue]);
+    } else if (clearType === 'all') {
+      // Delete all jobs for this queue
+      query = `
+        DELETE FROM pgboss.job
+        WHERE name = $1
+      `;
+      result = await pool.query(query, [queue]);
+    } else {
+      return res.status(400).json({ error: 'Invalid clearType. Must be "pending" or "all"' });
+    }
+
+    res.json({
+      success: true,
+      deletedCount: result.rowCount,
+      clearType,
+      queue
+    });
+  } catch (error) {
+    console.error('Error clearing queue:', error);
     res.status(500).json({ error: error.message });
   }
 });
