@@ -293,16 +293,16 @@ function displayQueues(queues) {
                 </div>
                 <div class="queue-stats">
                     <span class="queue-stat">
-                        <span style="color: var(--accent-warning)">●</span> ${queue.created || 0}
-                    </span>
-                    <span class="queue-stat">
                         <span style="color: var(--accent-info)">●</span> ${queue.active}
                     </span>
                     <span class="queue-stat">
-                        <span style="color: var(--accent-danger)">●</span> ${queue.failed}
+                        <span style="color: var(--accent-warning)">●</span> ${queue.created || 0}
                     </span>
                     <span class="queue-stat">
-                        <span style="color: var(--text-muted)">●</span> ${queue.total}
+                        <span style="color: var(--accent-success)">●</span> ${queue.completed}
+                    </span>
+                    <span class="queue-stat">
+                        <span style="color: var(--accent-danger)">●</span> ${queue.failed}
                     </span>
                 </div>
             </div>
