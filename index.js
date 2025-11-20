@@ -38,7 +38,8 @@ app.get('/api/queues', async (req, res) => {
         COUNT(*) FILTER (WHERE state = 'active')::int as active,
         COUNT(*) FILTER (WHERE state = 'completed')::int as completed,
         COUNT(*) FILTER (WHERE state = 'failed')::int as failed,
-        (COUNT(*) FILTER (WHERE state = 'created') + COUNT(*) FILTER (WHERE state = 'retry'))::int as pending,
+        COUNT(*) FILTER (WHERE state = 'created')::int as created,
+        COUNT(*) FILTER (WHERE state = 'retry')::int as retry,
         COUNT(*) FILTER (WHERE state = 'cancelled')::int as cancelled
       FROM pgboss.job
       GROUP BY name
@@ -52,7 +53,8 @@ app.get('/api/queues', async (req, res) => {
       active: parseInt(row.active, 10),
       completed: parseInt(row.completed, 10),
       failed: parseInt(row.failed, 10),
-      pending: parseInt(row.pending, 10),
+      created: parseInt(row.created, 10),
+      retry: parseInt(row.retry, 10),
       cancelled: parseInt(row.cancelled, 10)
     }));
     
