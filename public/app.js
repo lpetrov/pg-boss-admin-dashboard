@@ -26,10 +26,10 @@ function initializeApp() {
     // Restore interval from localStorage
     const savedInterval = localStorage.getItem('pgboss-interval') || 'hour';
     document.getElementById('intervalSelect').value = savedInterval;
-    
+
     loadQueues();
     loadGlobalStats();
-    
+
     // Set default date range
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -43,7 +43,7 @@ function setupEventListeners() {
     document.getElementById('intervalSelect').addEventListener('change', (e) => {
         // Save to localStorage
         localStorage.setItem('pgboss-interval', e.target.value);
-        
+
         // Refresh appropriate chart
         if (currentQueue && currentTab === 'stats') {
             loadQueueStats();
@@ -51,10 +51,10 @@ function setupEventListeners() {
             loadGlobalStats();
         }
     });
-    
+
     // Queue search
     document.getElementById('queueSearch').addEventListener('input', filterQueues);
-    
+
     // Job filters
     document.getElementById('jobSearch').addEventListener('input', debounce(() => {
         currentPage = 1;
@@ -64,7 +64,7 @@ function setupEventListeners() {
             loadJobs(currentQueue);
         }
     }, 300));
-    
+
     document.getElementById('stateFilter').addEventListener('change', () => {
         currentPage = 1;
         if (currentQueue && currentTab === 'jobs') {
@@ -73,7 +73,7 @@ function setupEventListeners() {
             loadJobs(currentQueue);
         }
     });
-    
+
     document.getElementById('dateFrom').addEventListener('change', () => {
         currentPage = 1;
         if (currentQueue && currentTab === 'jobs') {
@@ -82,7 +82,7 @@ function setupEventListeners() {
             loadJobs(currentQueue);
         }
     });
-    
+
     document.getElementById('dateTo').addEventListener('change', () => {
         currentPage = 1;
         if (currentQueue && currentTab === 'jobs') {
@@ -91,12 +91,12 @@ function setupEventListeners() {
             loadJobs(currentQueue);
         }
     });
-    
+
     // Bulk selection
     document.getElementById('selectAllJobs').addEventListener('change', toggleSelectAll);
     document.getElementById('bulkSelectBtn').addEventListener('click', toggleBulkSelection);
     document.getElementById('bulkCancelBtn').addEventListener('click', showBulkModal);
-    
+
     // Export
     document.getElementById('exportBtn').addEventListener('click', exportJobs);
 
@@ -107,7 +107,7 @@ function setupEventListeners() {
     document.querySelectorAll('.close-btn').forEach(btn => {
         btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal')));
     });
-    
+
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.classList.contains('modal-backdrop')) {
@@ -115,7 +115,7 @@ function setupEventListeners() {
             }
         });
     });
-    
+
     // ESC key to close modals
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -131,7 +131,7 @@ function setupEventListeners() {
 function setupRouting() {
     // Handle initial route
     handleRoute();
-    
+
     // Handle browser back/forward
     window.addEventListener('popstate', handleRoute);
 }
@@ -140,10 +140,10 @@ function handleRoute() {
     const hash = window.location.hash || '#overview';
     const [path, queryString] = hash.substring(1).split('?');
     const parts = path.split('/');
-    
+
     // Parse query parameters
     const params = new URLSearchParams(queryString || '');
-    
+
     if (parts[0] === 'overview') {
         showOverview();
     } else if (parts[0] === 'queue' && parts[1]) {
@@ -165,7 +165,7 @@ function handleRoute() {
             if (params.has('page')) {
                 currentPage = parseInt(params.get('page')) || 1;
             }
-            
+
             if (parts[3]) {
                 // Show specific job: #queue/queuename/jobs/jobid
                 selectQueue(queueName, false, true);
@@ -193,26 +193,26 @@ function updateRoute(route) {
 
 function buildJobsUrl() {
     if (!currentQueue) return '';
-    
+
     const params = new URLSearchParams();
-    
+
     const search = document.getElementById('jobSearch').value;
     if (search) params.set('search', search);
-    
+
     const state = document.getElementById('stateFilter').value;
     if (state) params.set('state', state);
-    
+
     const dateFrom = document.getElementById('dateFrom').value;
     if (dateFrom) params.set('from', dateFrom);
-    
+
     const dateTo = document.getElementById('dateTo').value;
     if (dateTo) params.set('to', dateTo);
-    
+
     if (currentPage > 1) params.set('page', currentPage);
-    
+
     const queryString = params.toString();
     const baseUrl = `queue/${encodeURIComponent(currentQueue)}/jobs`;
-    
+
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
@@ -230,13 +230,13 @@ function showOverview() {
 // Tab Management
 function switchTab(tab) {
     currentTab = tab;
-    
+
     // Update tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     // Show/hide content
     if (tab === 'stats') {
         document.getElementById('statsTab').style.display = 'flex';
@@ -260,30 +260,30 @@ async function loadQueues() {
     try {
         const response = await fetch('/api/queues');
         allQueues = await response.json();
-        
+
         updateQueueCount(allQueues.length);
         displayQueues(allQueues);
         updateOverviewStats(allQueues);
     } catch (error) {
         console.error('Error loading queues:', error);
-        document.getElementById('queueList').innerHTML = 
+        document.getElementById('queueList').innerHTML =
             '<div class="loading">Error loading queues</div>';
     }
 }
 
 function displayQueues(queues) {
     const container = document.getElementById('queueList');
-    
+
     if (queues.length === 0) {
         container.innerHTML = '<div class="loading">No queues found</div>';
         return;
     }
-    
+
     container.innerHTML = queues.map(queue => {
         const hasFailures = queue.failed > 0;
         const hasActive = queue.active > 0;
         const healthClass = hasFailures ? 'critical' : (hasActive ? 'warning' : 'healthy');
-        
+
         return `
             <div class="queue-item ${queue.queue === currentQueue ? 'active' : ''}" 
                  onclick="selectQueue('${queue.queue}', true, false)">
@@ -327,7 +327,7 @@ function updateOverviewStats(queues) {
         failed: acc.failed + queue.failed,
         pending: acc.pending + (queue.created || 0) + (queue.retry || 0)
     }), { active: 0, completed: 0, failed: 0, pending: 0 });
-    
+
     // Use standard number formatting without locale-specific formatting
     document.getElementById('totalActive').textContent = totals.active.toString();
     document.getElementById('totalCompleted').textContent = totals.completed.toString();
@@ -339,12 +339,12 @@ async function selectQueue(queueName, updateUrl = true, showJobs = false) {
     currentQueue = queueName;
     currentPage = 1;
     selectedJobs.clear();
-    
+
     // Update UI
     document.querySelectorAll('.queue-item').forEach(item => {
         item.classList.remove('active');
     });
-    
+
     // Find and activate the queue item
     const queueItems = document.querySelectorAll('.queue-item');
     queueItems.forEach(item => {
@@ -352,14 +352,14 @@ async function selectQueue(queueName, updateUrl = true, showJobs = false) {
             item.classList.add('active');
         }
     });
-    
+
     // Update breadcrumb
     const breadcrumb = document.getElementById('currentQueueBreadcrumb');
     breadcrumb.innerHTML = `<a href="#queue/${encodeURIComponent(queueName)}">${queueName}</a>`;
-    
+
     document.getElementById('queueView').style.display = 'flex';
     document.getElementById('overviewContent').style.display = 'none';
-    
+
     // Set active tab
     if (showJobs) {
         currentTab = 'jobs';
@@ -376,7 +376,7 @@ async function selectQueue(queueName, updateUrl = true, showJobs = false) {
         document.querySelectorAll('.tab-btn')[1].classList.remove('active');
         loadQueueStats();
     }
-    
+
     // Update URL
     if (updateUrl) {
         if (showJobs) {
@@ -404,13 +404,13 @@ async function loadJobs(queueName) {
     try {
         const response = await fetch(url);
         const jobs = await response.json();
-        
+
         // Store all jobs for filtering
         allJobs = jobs;
-        
+
         // Apply client-side filtering
         let filteredJobs = jobs;
-        
+
         // JMESPath or text search
         if (search) {
             if (search.startsWith('jq:')) {
@@ -420,7 +420,7 @@ async function loadJobs(queueName) {
                     filteredJobs = filteredJobs.filter(job => {
                         try {
                             const result = jmespath.search(job, query);
-                            
+
                             // For comparison operations (==, !=, <, >), JMESPath returns a boolean
                             // For simple property access, it returns the value
                             // We only want to filter when result is explicitly true for comparisons
@@ -440,21 +440,21 @@ async function loadJobs(queueName) {
             } else {
                 // Text search in ID, data, and output
                 const searchLower = search.toLowerCase();
-                filteredJobs = filteredJobs.filter(job => 
+                filteredJobs = filteredJobs.filter(job =>
                     job.id.toLowerCase().includes(searchLower) ||
                     JSON.stringify(job.data || {}).toLowerCase().includes(searchLower) ||
                     JSON.stringify(job.output || {}).toLowerCase().includes(searchLower)
                 );
             }
         }
-        
+
         // Date filtering
         if (dateFrom) {
-            filteredJobs = filteredJobs.filter(job => 
+            filteredJobs = filteredJobs.filter(job =>
                 new Date(job.createdon) >= new Date(dateFrom)
             );
         }
-        
+
         if (dateTo) {
             filteredJobs = filteredJobs.filter(job =>
                 new Date(job.createdon) <= new Date(dateTo)
@@ -466,26 +466,26 @@ async function loadJobs(queueName) {
         updateActiveFilters();
     } catch (error) {
         console.error('Error loading jobs:', error);
-        document.getElementById('jobsTableBody').innerHTML = 
+        document.getElementById('jobsTableBody').innerHTML =
             '<tr><td colspan="8" class="empty-message">Error loading jobs</td></tr>';
     }
 }
 
 function displayJobs(jobs) {
     const tbody = document.getElementById('jobsTableBody');
-    
+
     if (jobs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="empty-message">No jobs found</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = jobs.map(job => {
-        const duration = job.completedon && job.startedon 
+        const duration = job.completedon && job.startedon
             ? formatDuration(new Date(job.completedon) - new Date(job.startedon))
             : '-';
-        
+
         const isSelected = selectedJobs.has(job.id);
-        
+
         return `
             <tr class="${isSelected ? 'selected' : ''}" data-job-id="${job.id}">
                 <td class="checkbox-col">
@@ -547,11 +547,11 @@ function updateSortIndicators() {
 function toggleBulkSelection() {
     bulkSelectionMode = !bulkSelectionMode;
     selectedJobs.clear();
-    
+
     document.getElementById('bulkSelectBtn').classList.toggle('active', bulkSelectionMode);
     document.getElementById('bulkCancelBtn').style.display = bulkSelectionMode ? 'inline-flex' : 'none';
     document.getElementById('selectAllJobs').parentElement.style.display = bulkSelectionMode ? 'table-cell' : 'none';
-    
+
     if (currentQueue) loadJobs(currentQueue);
 }
 
@@ -561,31 +561,31 @@ function toggleJobSelection(jobId) {
     } else {
         selectedJobs.add(jobId);
     }
-    
+
     const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
     if (row) {
         row.classList.toggle('selected', selectedJobs.has(jobId));
     }
-    
+
     updateBulkSelectionUI();
 }
 
 function toggleSelectAll() {
     const selectAll = document.getElementById('selectAllJobs').checked;
     const visibleJobs = allJobs;
-    
+
     if (selectAll) {
         visibleJobs.forEach(job => selectedJobs.add(job.id));
     } else {
         selectedJobs.clear();
     }
-    
+
     if (currentQueue) loadJobs(currentQueue);
 }
 
 function updateBulkSelectionUI() {
     const count = selectedJobs.size;
-    document.getElementById('bulkCancelBtn').textContent = 
+    document.getElementById('bulkCancelBtn').textContent =
         count > 0 ? `Cancel Selected (${count})` : 'Cancel Selected';
 }
 
@@ -594,14 +594,14 @@ function showBulkModal() {
         alert('No jobs selected');
         return;
     }
-    
+
     document.getElementById('selectedCount').textContent = selectedJobs.size;
     document.getElementById('bulkModal').style.display = 'block';
 }
 
 async function bulkCancel() {
     if (!confirm(`Are you sure you want to cancel ${selectedJobs.size} jobs?`)) return;
-    
+
     // Note: Actual implementation would need backend support
     alert(`Bulk cancel functionality not implemented - requires pg-boss instance access`);
     closeModal(document.getElementById('bulkModal'));
@@ -610,7 +610,7 @@ async function bulkCancel() {
 
 async function bulkRetry() {
     if (!confirm(`Are you sure you want to retry ${selectedJobs.size} jobs?`)) return;
-    
+
     // Note: Actual implementation would need backend support
     alert(`Bulk retry functionality not implemented - requires pg-boss instance access`);
     closeModal(document.getElementById('bulkModal'));
@@ -622,12 +622,12 @@ async function showJobDetails(jobId, updateUrl = true) {
     try {
         const response = await fetch(`/api/job/${jobId}`);
         const job = await response.json();
-        
+
         // Update URL if needed
         if (updateUrl && currentQueue) {
             updateRoute(`#queue/${encodeURIComponent(currentQueue)}/jobs/${jobId}`);
         }
-        
+
         const detailsHtml = `
             <div class="job-detail">
                 <span class="job-detail-label">ID</span>
@@ -683,23 +683,23 @@ async function showJobDetails(jobId, updateUrl = true) {
                 <pre>${makeValuesClickable(JSON.stringify(job.output, null, 2))}</pre>
             </div>` : ''}
         `;
-        
+
         document.getElementById('jobDetails').innerHTML = detailsHtml;
-        
+
         // Add action buttons
         const actionsContainer = document.getElementById('jobActions');
         actionsContainer.innerHTML = '';
-        
+
         if (job.state === 'failed' || job.state === 'cancelled') {
             actionsContainer.innerHTML += `<button class="primary-btn" onclick="retryJob('${job.id}')">🔄 Retry Job</button>`;
         }
-        
+
         if (job.state === 'active' || job.state === 'created' || job.state === 'retry') {
             actionsContainer.innerHTML += `<button class="danger-btn" onclick="cancelJob('${job.id}')">❌ Cancel Job</button>`;
         }
-        
+
         actionsContainer.innerHTML += `<button class="secondary-btn" onclick="copyJobData('${job.id}')">📋 Copy Data</button>`;
-        
+
         document.getElementById('jobModal').style.display = 'block';
         document.getElementById('jobModal').focus();
     } catch (error) {
@@ -717,15 +717,15 @@ function makeValuesClickable(jsonString) {
         // If parsing fails, return original string
         return jsonString;
     }
-    
+
     // Convert back to JSON with custom replacer that adds clickable spans
     function addClickableSpans(key, value, path = '') {
         const currentPath = path ? `${path}.${key}` : key;
-        
+
         if (value === null) {
             return `<span class="clickable-value" onclick="addFilterRaw('${currentPath}', null)">null</span>`;
         } else if (typeof value === 'string') {
-            const encodedValue = btoa(value);
+            const encodedValue = btoa(encodeURIComponent(value));
             return `<span class="clickable-value" onclick="addFilterEncoded('${currentPath}', '${encodedValue}')">"${value}"</span>`;
         } else if (typeof value === 'number') {
             return `<span class="clickable-value" onclick="addFilterRaw('${currentPath}', ${value})">${value}</span>`;
@@ -752,19 +752,19 @@ function makeValuesClickable(jsonString) {
         }
         return String(value);
     }
-    
+
     // Simple regex-based approach for better performance and consistency
     let result = jsonString;
-    
+
     // First pass: handle string values
     result = result.replace(
         /"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/gm,
         (match, key, value) => {
-            const encodedValue = btoa(value);
+            const encodedValue = btoa(encodeURIComponent(value));
             return `"${key}": <span class="clickable-value" onclick="addFilterEncoded('${key}', '${encodedValue}')">"${value}"</span>`;
         }
     );
-    
+
     // Second pass: handle numbers, booleans, and null
     result = result.replace(
         /"([^"]+)":\s*([-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)(?=\s*[,\n\}])/gm,
@@ -772,16 +772,16 @@ function makeValuesClickable(jsonString) {
             return `"${key}": <span class="clickable-value" onclick="addFilterRaw('${key}', ${value})">${value}</span>`;
         }
     );
-    
+
     // Third pass: handle array elements (strings)
     result = result.replace(
         /(\[[\s\n]*|,\s*)"((?:[^"\\]|\\.)*)"/gm,
         (match, prefix, value) => {
-            const encodedValue = btoa(value);
+            const encodedValue = btoa(encodeURIComponent(value));
             return `${prefix}<span class="clickable-value" onclick="addFilterArrayString('${encodedValue}')">"${value}"</span>`;
         }
     );
-    
+
     // Fourth pass: handle array elements (numbers, booleans)
     result = result.replace(
         /(\[[\s\n]*|,\s*)([-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)(?=\s*[,\n\]])/gm,
@@ -789,21 +789,21 @@ function makeValuesClickable(jsonString) {
             return `${prefix}<span class="clickable-value" onclick="addFilterArrayValue(${value})">${value}</span>`;
         }
     );
-    
+
     return result;
 }
 
 function addFilterEncoded(key, encodedValue) {
     // Decode the base64 value
     const value = atob(encodedValue);
-    
+
     // Add to search box as JMESPath query with double quotes
     const searchBox = document.getElementById('jobSearch');
     searchBox.value = `jq:data.${key} == "${value}"`;
-    
+
     // Close modal
     closeModal(document.getElementById('jobModal'));
-    
+
     // Ensure we're on the jobs tab
     if (currentQueue) {
         if (currentTab !== 'jobs') {
@@ -814,7 +814,7 @@ function addFilterEncoded(key, encodedValue) {
             document.querySelectorAll('.tab-btn')[0].classList.remove('active');
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
         }
-        
+
         currentPage = 1;
         // Update URL with the filter
         setTimeout(() => {
@@ -828,17 +828,17 @@ function addFilterEncoded(key, encodedValue) {
 function addFilterRaw(key, value) {
     // Add to search box as JMESPath query
     const searchBox = document.getElementById('jobSearch');
-    
+
     // Convert all values to strings for consistent comparison
     if (value === null) {
         searchBox.value = `jq:data.${key} == null`;
     } else {
         searchBox.value = `jq:data.${key} == "${value}"`;
     }
-    
+
     // Close modal
     closeModal(document.getElementById('jobModal'));
-    
+
     // Ensure we're on the jobs tab
     if (currentQueue) {
         if (currentTab !== 'jobs') {
@@ -849,7 +849,7 @@ function addFilterRaw(key, value) {
             document.querySelectorAll('.tab-btn')[0].classList.remove('active');
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
         }
-        
+
         currentPage = 1;
         // Update URL with the filter
         setTimeout(() => {
@@ -863,14 +863,14 @@ function addFilterRaw(key, value) {
 function addFilterArrayString(encodedValue) {
     // Decode the base64 value
     const value = atob(encodedValue);
-    
+
     // Add to search box as JMESPath query for array contains
     const searchBox = document.getElementById('jobSearch');
     searchBox.value = `jq:contains(data[*], "${value}")`;
-    
+
     // Close modal
     closeModal(document.getElementById('jobModal'));
-    
+
     // Ensure we're on the jobs tab and reload
     if (currentQueue) {
         if (currentTab !== 'jobs') {
@@ -880,7 +880,7 @@ function addFilterArrayString(encodedValue) {
             document.querySelectorAll('.tab-btn')[0].classList.remove('active');
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
         }
-        
+
         currentPage = 1;
         setTimeout(() => {
             const newUrl = '#' + buildJobsUrl();
@@ -894,10 +894,10 @@ function addFilterArrayValue(value) {
     // Add to search box as JMESPath query for array contains
     const searchBox = document.getElementById('jobSearch');
     searchBox.value = `jq:contains(data[*], "${value}")`;
-    
+
     // Close modal
     closeModal(document.getElementById('jobModal'));
-    
+
     // Ensure we're on the jobs tab and reload
     if (currentQueue) {
         if (currentTab !== 'jobs') {
@@ -907,7 +907,7 @@ function addFilterArrayValue(value) {
             document.querySelectorAll('.tab-btn')[0].classList.remove('active');
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
         }
-        
+
         currentPage = 1;
         setTimeout(() => {
             const newUrl = '#' + buildJobsUrl();
@@ -977,9 +977,9 @@ async function copyJobData(jobId) {
     try {
         const response = await fetch(`/api/job/${jobId}`);
         const job = await response.json();
-        
+
         const jobData = JSON.stringify(job, null, 2);
-        
+
         if (navigator.clipboard) {
             await navigator.clipboard.writeText(jobData);
             alert('Job data copied to clipboard!');
@@ -1001,22 +1001,22 @@ async function copyJobData(jobId) {
 async function loadGlobalStats() {
     const interval = document.getElementById('intervalSelect').value;
     const url = `/api/stats/${interval}`;
-    
+
     try {
         const response = await fetch(url);
         const stats = await response.json();
-        
+
         if (stats.length === 0) {
             updateChart([], [], [], [], [], 'globalChart');
             return;
         }
-        
+
         const labels = stats.map(s => s.time_label);
         const total = stats.map(s => s.total);
         const completed = stats.map(s => s.completed);
         const failed = stats.map(s => s.failed);
         const active = stats.map(s => s.active);
-        
+
         updateChart(labels, total, completed, failed, active, 'globalChart');
     } catch (error) {
         console.error('Error loading global stats:', error);
@@ -1025,29 +1025,29 @@ async function loadGlobalStats() {
 
 async function loadQueueStats() {
     if (!currentQueue) return;
-    
+
     // First, load queue-specific counts
     loadQueueCounts();
-    
+
     // Then load the chart data
     const interval = document.getElementById('intervalSelect').value;
     const url = `/api/stats/${interval}?queue=${encodeURIComponent(currentQueue)}`;
-    
+
     try {
         const response = await fetch(url);
         const stats = await response.json();
-        
+
         if (stats.length === 0) {
             updateChart([], [], [], [], [], 'queueChart');
             return;
         }
-        
+
         const labels = stats.map(s => s.time_label);
         const total = stats.map(s => s.total);
         const completed = stats.map(s => s.completed);
         const failed = stats.map(s => s.failed);
         const active = stats.map(s => s.active);
-        
+
         updateChart(labels, total, completed, failed, active, 'queueChart');
     } catch (error) {
         console.error('Error loading queue stats:', error);
@@ -1056,11 +1056,11 @@ async function loadQueueStats() {
 
 async function loadQueueCounts() {
     if (!currentQueue) return;
-    
+
     try {
         const response = await fetch('/api/queues');
         const queues = await response.json();
-        
+
         const queue = queues.find(q => q.queue === currentQueue);
         if (queue) {
             document.getElementById('queueActive').textContent = queue.active.toString();
@@ -1075,14 +1075,14 @@ async function loadQueueCounts() {
 
 function updateChart(labels, total, completed, failed, active, chartId) {
     const ctx = document.getElementById(chartId).getContext('2d');
-    
+
     // Destroy the appropriate chart
     if (chartId === 'globalChart' && globalChart) {
         globalChart.destroy();
     } else if (chartId === 'queueChart' && queueChart) {
         queueChart.destroy();
     }
-    
+
     const newChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1162,7 +1162,7 @@ function updateChart(labels, total, completed, failed, active, chartId) {
             }
         }
     });
-    
+
     // Store the chart reference
     if (chartId === 'globalChart') {
         globalChart = newChart;
@@ -1175,29 +1175,29 @@ function updateChart(labels, total, completed, failed, active, chartId) {
 function updateActiveFilters() {
     const container = document.getElementById('activeFilters');
     container.innerHTML = '';
-    
+
     const filters = [];
-    
+
     const search = document.getElementById('jobSearch').value;
     if (search) {
         filters.push({ type: 'search', value: search });
     }
-    
+
     const state = document.getElementById('stateFilter').value;
     if (state) {
         filters.push({ type: 'state', value: state });
     }
-    
+
     const dateFrom = document.getElementById('dateFrom').value;
     if (dateFrom) {
         filters.push({ type: 'dateFrom', value: new Date(dateFrom).toLocaleDateString() });
     }
-    
+
     const dateTo = document.getElementById('dateTo').value;
     if (dateTo) {
         filters.push({ type: 'dateTo', value: new Date(dateTo).toLocaleDateString() });
     }
-    
+
     container.innerHTML = filters.map(filter => `
         <div class="filter-tag">
             <span>${filter.type}: ${filter.value}</span>
@@ -1221,7 +1221,7 @@ function removeFilter(type) {
             document.getElementById('dateTo').value = '';
             break;
     }
-    
+
     if (currentQueue && currentTab === 'jobs') {
         currentPage = 1;
         const newUrl = '#' + buildJobsUrl();
@@ -1236,21 +1236,21 @@ async function exportJobs() {
         alert('Please select a queue first');
         return;
     }
-    
+
     try {
         // Fetch all jobs (we'll filter client-side)
         const state = document.getElementById('stateFilter').value;
         let url = `/api/jobs/${encodeURIComponent(currentQueue)}?limit=10000`;
         if (state) url += `&state=${state}`;
-        
+
         const response = await fetch(url);
         let jobs = await response.json();
-        
+
         // Apply client-side filters (same logic as loadJobs)
         const search = document.getElementById('jobSearch').value;
         const dateFrom = document.getElementById('dateFrom').value;
         const dateTo = document.getElementById('dateTo').value;
-        
+
         // Apply search filter
         if (search) {
             if (search.startsWith('jq:')) {
@@ -1271,50 +1271,50 @@ async function exportJobs() {
             } else {
                 // Text search
                 const searchLower = search.toLowerCase();
-                jobs = jobs.filter(job => 
+                jobs = jobs.filter(job =>
                     job.id.toLowerCase().includes(searchLower) ||
                     JSON.stringify(job.data || {}).toLowerCase().includes(searchLower) ||
                     JSON.stringify(job.output || {}).toLowerCase().includes(searchLower)
                 );
             }
         }
-        
+
         // Date filtering
         if (dateFrom) {
-            jobs = jobs.filter(job => 
+            jobs = jobs.filter(job =>
                 new Date(job.createdon) >= new Date(dateFrom)
             );
         }
-        
+
         if (dateTo) {
-            jobs = jobs.filter(job => 
+            jobs = jobs.filter(job =>
                 new Date(job.createdon) <= new Date(dateTo)
             );
         }
-        
+
         if (jobs.length === 0) {
             alert('No jobs to export with current filters');
             return;
         }
-        
+
         // Convert to CSV
         const csv = convertToCSV(jobs);
-        
+
         // Download
         const blob = new Blob([csv], { type: 'text/csv' });
         const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = blobUrl;
-        
+
         // Include filter info in filename
         const filterSuffix = search || state || dateFrom || dateTo ? '-filtered' : '';
         a.download = `pgboss-${currentQueue}${filterSuffix}-${new Date().toISOString().split('T')[0]}.csv`;
-        
+
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(blobUrl);
-        
+
         console.log(`Exported ${jobs.length} jobs`);
     } catch (error) {
         console.error('Error exporting jobs:', error);
@@ -1336,12 +1336,12 @@ function convertToCSV(jobs) {
         JSON.stringify(job.data || {}),
         JSON.stringify(job.output || {})
     ]);
-    
+
     const csvContent = [
         headers.join(','),
         ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
-    
+
     return csvContent;
 }
 
@@ -1393,7 +1393,7 @@ function closeModal(modal) {
 // Utility Functions
 function refresh() {
     loadQueues();
-    
+
     if (currentQueue) {
         if (currentTab === 'stats') {
             loadQueueStats();
@@ -1412,9 +1412,9 @@ function startAutoRefresh() {
 function formatDate(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -1427,12 +1427,12 @@ function formatRelativeTime(dateString) {
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
-    
+
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (seconds < 60) return 'just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
